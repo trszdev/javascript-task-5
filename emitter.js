@@ -33,6 +33,9 @@ class Emitter {
 
     off(event, context) {
         let node = this.traverse(event).pop();
+        for (let child of Object.keys(node).filter(x => x !== '.')) {
+            delete node[child];
+        }
         node['.'] = node['.'].filter(x => x[0] !== context);
     }
 
