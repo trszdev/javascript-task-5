@@ -20,17 +20,26 @@ class Emitter {
     off(event, context) {
         event += '.';
         this.events
-            .map((x, i) => x[0].startsWith(event) && x[1] === context ? i : -1)
-            .forEach(x => delete this.events[x]);
+            .map((item, index) => [item, index])
+            .filter(elem => elem[0][0].startsWith(event) && elem[0][1] === context)
+            .forEach(elem => delete this.events[elem[1]]);
+    }
+
+    static getNamespaces(path) {
+        let last = '';
+        let result = [];
+        for (let part of path.split('.')) {
+            last += part + '.';
+            result.unshift(last);
+        }
+
+        return result;
     }
 
     emit(event) {
-        let events = event.split('.')
-            .reduce((acc, x) => [acc[0].concat([x])].concat(acc), [[]])
-            .slice(0, -1);
-        events.forEach(e =>
+        Emitter.getNamespaces(event).forEach(e =>
             this.events
-                .filter(x => x[0] === e.join('.') + '.')
+                .filter(x => x[0] === e)
                 .forEach(x => x[2]())
         );
     }
