@@ -10,38 +10,37 @@ module.exports = getEmitter;
 
 class Emitter {
     constructor() {
-        this.events = [];
+        this.root = {};
     }
 
     on(event, context, handler) {
-        this.events.push([event + '.', context, handler.bind(context)]);
+        let node = this.traverse(event).pop();
+        node['.'].push([context, handler]);
+    }
+
+    traverse(event) {
+        let visited = [];
+        event.split('.').reduce((acc, x) => {
+            acc[x] = acc[x] || {};
+            acc[x]['.'] = acc[x]['.'] || [];
+            visited.push(acc[x]);
+
+            return acc[x];
+        }, this.root);
+
+        return visited;
     }
 
     off(event, context) {
-        event += '.';
-        this.events
-            .map((item, index) => [item, index])
-            .filter(elem => elem[0][0].startsWith(event) && elem[0][1] === context)
-            .forEach(elem => delete this.events[elem[1]]);
-    }
-
-    static getNamespaces(path) {
-        let last = '';
-        let result = [];
-        for (let part of path.split('.')) {
-            last += part + '.';
-            result.unshift(last);
-        }
-
-        return result;
+        let node = this.traverse(event).pop();
+        node['.'] = node['.'].filter(x => x[0] !== context);
     }
 
     emit(event) {
-        Emitter.getNamespaces(event).forEach(e =>
-            this.events
-                .filter(x => x[0] === e)
-                .forEach(x => x[2]())
-        );
+        let nodes = this.traverse(event).reverse();
+        nodes.forEach(n => n['.'].forEach(
+            ([context, handler]) => handler.bind(context)()
+        ));
     }
 }
 
